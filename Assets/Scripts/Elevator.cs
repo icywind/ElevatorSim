@@ -15,6 +15,7 @@ namespace SimElevator
         PauseUp,
         PauseDown
     }
+    public delegate void StateUpdateDelegate(int floor, LiftState state);
 
     public class Elevator : MonoBehaviour
     {
@@ -22,17 +23,15 @@ namespace SimElevator
         [SerializeField] float speed = 1.0f;
         [SerializeField] float liftPauseTime = 3.0f;
         [SerializeField] Button elvButton = null;
-        [SerializeField]
-        int testFloor = 4;
-
+             
         const float DISTANCE_ERROR = 0.05f;
-
-        List<float> floorPositionY = new List<float>();
+        readonly List<float> floorPositionY = new List<float>();
         [SerializeField]
-        List<int> UpStops = new List<int>();
-        //HashSet<int> UpStops = new HashSet<int>();
+        //List<int> UpStops = new List<int>();
+        HashSet<int> UpStops = new HashSet<int>();
         [SerializeField]
-        List<int> DownStops = new List<int>();
+         // List<int> DownStops = new List<int>();
+        HashSet<int> DownStops = new HashSet<int>();
 
         int TopFloor
         {
@@ -49,39 +48,43 @@ namespace SimElevator
         [SerializeField]
         HashSet<int> InsideRequest = new HashSet<int>();
 
-        int CurrentFloor = 0;
+        int _currentFloor = 0;
+        public int CurrentFloor
+        {
+            get { return _currentFloor;  }
+            private set
+            {
+                _currentFloor = value;
+                handleStateUpdate?.Invoke(_currentFloor, LiftState);
+            }
+        }
 
-        int highest = 0;
-        int lowest = 0;
         double pausingTime = 0;
 
-        Action<int, LiftState> stopNotify = null;
         Vector3 TargetPosition { get; set; }
 
         public LiftState LiftState; //{ get; private set; }
+
+        event StateUpdateDelegate handleStateUpdate;
+        event StateUpdateDelegate stopNotify;
+
+        ElevatorPanel elevatorPanel;
 
         public void AddRequest(int floor)
         {
             if (floor > CurrentFloor)
             {
                 UpStops.Add(floor);
-                if (floor > highest)
-                {
-                    highest = floor;
-                }
             }
             else
             {
                 DownStops.Add(floor);
-                if (floor < lowest)
-                {
-                    lowest = floor;
-                }
             }
             if (LiftState == LiftState.Still)
             {
                 OnStart();
             }
+            else UpdateCourse(floor);
         }
 
         /// <summary>
@@ -106,16 +109,16 @@ namespace SimElevator
         /// <param name="numOfFloors">Number of floors.</param>
         /// <param name="floorHeight">Floor height.</param>
         /// <param name="stopCallback">Stop callback.</param>
-        public void Setup(int elvId, int numOfFloors, float floorHeight, Action<int, LiftState> stopCallback)
+        public void Setup(int elvId, int numOfFloors, float floorHeight, StateUpdateDelegate stopCallback)
         {
             this.elvId = elvId;
-            Debug.LogWarning("Screen size h= " + Screen.height + " w:" + Screen.width);
+
             for (int i = 0; i < numOfFloors; i++)
             {
                 float posY = transform.position.y + i * floorHeight/(5.5f*Screen.height/640);
                 floorPositionY.Add(posY);
             }
-            stopNotify = stopCallback;
+            stopNotify += stopCallback;
             UpdateElevatorVisual(true);
         }
 
@@ -139,6 +142,7 @@ namespace SimElevator
                         int floor = CheckFloor();
                         if (-1 != floor)
                         {
+                            if (CurrentFloor != floor) Debug.Log("Floor ------> " + floor);
                             CurrentFloor = floor;
                             if ((UpStops.Contains(floor) && LiftState == LiftState.Up) || 
                                 (DownStops.Contains(floor) && LiftState == LiftState.Down) ||
@@ -177,7 +181,7 @@ namespace SimElevator
             }
             else
             {
-                for (int h = 1; h < floorPositionY.Count; h++)
+                for (int h = 0; h < floorPositionY.Count; h++)
                 {
                     if ( Math.Abs (floorPositionY[h]-curY ) < DISTANCE_ERROR )
                     {
@@ -274,6 +278,7 @@ namespace SimElevator
             }
 
             stopNotify?.Invoke(CurrentFloor, LiftState);
+            handleStateUpdate?.Invoke(CurrentFloor, LiftState);
         }
 
         void ResumeLifting()
@@ -282,30 +287,22 @@ namespace SimElevator
             {
                 if (UpStops.Count > 0)
                 {
-                    // move it up again
-                    // LiftState = LiftState.Up;
                     PrepareMoveUp();
                 }
                 else
                 {
-                    //LiftState = LiftState.Down;
                     PrepareMoveDown();
-                    // move it down
                 }
             } 
             else if (LiftState == LiftState.PauseDown)
             {
                 if (DownStops.Count > 0)
                 {
-                    // move it down again
-                    // LiftState = LiftState.Down;
                     PrepareMoveDown();
                 }
                 else
                 {
                     PrepareMoveUp();
-                    //LiftState = LiftState.Up;
-                    // move it up
                 }
             }
            
@@ -313,8 +310,7 @@ namespace SimElevator
 
         public void OnClick()
         {
-            Debug.Log("OnClick of Elevator");
-             // Move2(testFloor);
+
             if (LiftState == LiftState.PauseDown || 
                 LiftState == LiftState.PauseUp ||
                 LiftState == LiftState.Still)
@@ -325,14 +321,30 @@ namespace SimElevator
 
         void OpenPanel()
         {
-            GameObject go = GameObjectUtil.InstantiateAndAnchor(PanelPrefab,
-                transform.parent.parent.parent,
-                new Vector3(0, 0, 0)
-                );
-            ElevatorPanel panel = go.GetComponent<ElevatorPanel>();
-            if (panel != null)
+            if (elevatorPanel == null)
             {
-                panel.Setup(elvId, TopFloor + 1, AddRequest, LiftState, null);
+                GameObject go = GameObjectUtil.InstantiateAndAnchor(PanelPrefab,
+                    transform.parent.parent.parent,
+                    new Vector3(0, 0, 0)
+                    );
+                elevatorPanel = go.GetComponent<ElevatorPanel>();
+                if (elevatorPanel != null)
+                {
+                    elevatorPanel.Setup(elvId, TopFloor + 1, LiftState, null, AddRequest, ClosePanel);
+                }
+                handleStateUpdate += elevatorPanel.UpdateState;
+
+            } else
+            {
+                elevatorPanel.gameObject.SetActive(true);
+            }
+        }
+
+        void ClosePanel()
+        {
+            if (elevatorPanel != null)
+            {
+                elevatorPanel.gameObject.SetActive(false);
             }
         }
 
@@ -342,12 +354,28 @@ namespace SimElevator
             return dist / speed;
         }
 
+        /// <summary>
+        ///   Handle a new request during the move
+        /// </summary>
+        /// <param name="floor">Floor.</param>
+        void UpdateCourse(int floor)
+        {
+            if (floor > CurrentFloor && LiftState == LiftState.Up) {
+                PrepareMoveUp();
+            } 
+            else if (floor < CurrentFloor && LiftState == LiftState.Down)
+            {
+                PrepareMoveDown();
+            }
+        }
+
         void PrepareMoveUp()
         {
             if (UpStops.Count > 0)
             {
                 Vector3 currentPos = transform.position;
-                int targetFloor = UpStops[0];
+                int targetFloor = UpStops.Min();
+                Debug.Log("PrepareMoveUp target:" + targetFloor);
                 TargetPosition = new Vector3(currentPos.x, floorPositionY[targetFloor], currentPos.z);
                 LiftState = LiftState.Up;
                 UpdateElevatorVisual(false);
@@ -359,72 +387,14 @@ namespace SimElevator
             if (DownStops.Count > 0)
             {
                 Vector3 currentPos = transform.position;
-                int targetFloor = DownStops[0];
+                int targetFloor = DownStops.Max();
+                Debug.Log("PrepareMoveDown target:" + targetFloor);
                 TargetPosition = new Vector3(currentPos.x, floorPositionY[targetFloor], currentPos.z);
                 LiftState = LiftState.Down;
                 UpdateElevatorVisual(false);
             }
         }
 
-        void Move2(int targetFloor)
-        {
-            if (targetFloor == CurrentFloor || targetFloor < 0 || targetFloor > floorPositionY.Count - 1)
-            {
-                return;
-            }
-
-            if (targetFloor > CurrentFloor)
-            {
-                UpStops.Add(targetFloor);
-            }
-            else
-            {
-                DownStops.Add(targetFloor);
-            }
-
-            InsideRequest.Add(targetFloor);
-            if (LiftState == LiftState.Still)
-            {
-
-                if (targetFloor > CurrentFloor)
-                {
-                    PrepareMoveUp();
-                } else
-                {
-                    PrepareMoveDown();
-                }
-            } 
-
-        }
-
-        void Move(int targetFloor)
-        {
-            if (targetFloor == CurrentFloor || targetFloor < 0 || targetFloor > floorPositionY.Count - 1)
-            {
-                return;
-            }
-
-            Vector3 currentPos = transform.position;
-            Vector3 targetFloorPos = new Vector3(currentPos.x, floorPositionY[targetFloor], currentPos.z);
-            float dist = Vector3.Distance(currentPos, targetFloorPos);
-            // intermidiate position for the elevator to slow down before stop
-            Vector3 nextPos = currentPos + .7f * dist * (targetFloor > CurrentFloor ? Vector3.up : Vector3.down);
-
-            Debug.LogWarning(string.Format("CurrentPos = {0} next = {1}  target={2}", currentPos, nextPos, targetFloorPos));
-            System.Action<ITween<Vector3>> startMovement = (t) =>
-            {
-                gameObject.transform.position = t.CurrentValue;
-            };
-            float duration1 = getDuration(currentPos, nextPos);
-            float duration2 = getDuration(nextPos, targetFloorPos);
-            gameObject.Tween("MoveElevator", currentPos, nextPos, duration1, TweenScaleFunctions.CubicEaseIn, startMovement)
-                .ContinueWith(new Vector3Tween().Setup(nextPos, targetFloorPos, duration2,
-                TweenScaleFunctions.CubicEaseOut, startMovement,
-                (t) =>
-                {
-                    CurrentFloor = targetFloor;
-                }));
-        }
     }
 
 }

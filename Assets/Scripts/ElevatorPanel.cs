@@ -31,12 +31,13 @@ namespace SimElevator {
 
         const float CONTAINER_HEIGHT = 600;
 
-        Action<int> OnFloorSelect;
         LiftState liftState;
         int totalFloors = 0;
         int currentFloor = 0;
+        Action OnClose;
+        Action<int> OnFloorSelect;
 
-        private void Start()
+        private void OnEnable()
         {
             // TEST CODE
             /*
@@ -54,42 +55,42 @@ namespace SimElevator {
             if (Input.GetKey(KeyCode.Escape))
             {
                 Time.timeScale = 1;
-                Destroy(gameObject);
+                OnClose?.Invoke();
             }
         }
 
-        public void Setup(int elvId, int numFloors, Action<int> floorUpdate, LiftState state, IEnumerable<int>selectedFloors)
+        public void Setup(int elvId, int numFloors, LiftState state, IEnumerable<int>selectedFloors, Action<int> floorUpdate, Action onClose)
         {
             liftState = state;
             OnFloorSelect = floorUpdate;
+            OnClose = onClose;
             totalFloors = numFloors;
             if (selectedFloors != null)
             {
                 SelectedFloors = new HashSet<int>(selectedFloors);
             }
             InitButtons();
-            UpdateState(state, 0);
+            UpdateState(0, state);
             ElevatorTitle.text = string.Format("ELEVATOR {0}", elvId);
         }
     
-        public void UpdateState(LiftState state, int floor)
+        public void UpdateState(int floor, LiftState state)
         {
             FloorTitle.text = floor.ToString();
             currentFloor = floor;
 
+            Debug.LogWarning("Update state floor:" + floor + " state: " + state);
+
             switch (state)
             {
                 case LiftState.PauseDown:
-                    HighlightButtonText(floor, false);
+                case LiftState.PauseUp:
+                    HandleStop(floor);
                     break;
 
                 case LiftState.Down:
                     EnableDownArrow(true);
                     EnableUpArrow(false);
-                    break;
-                
-                case LiftState.PauseUp:
-                    HighlightButtonText(floor, false);
                     break;
 
                 case LiftState.Up:
@@ -100,6 +101,7 @@ namespace SimElevator {
                 default:
                     EnableUpArrow(false);
                     EnableDownArrow(false);
+                    HandleStop(floor);
                     break;
             }
 
@@ -149,6 +151,12 @@ namespace SimElevator {
                 ; });
                 floorButtons.Add(button);
             }
+        }
+
+        void HandleStop(int floor)
+        {
+            SelectedFloors.Remove(floor);
+            HighlightButtonText(floor, false);
         }
 
         void OnButtonPressed(int floor)

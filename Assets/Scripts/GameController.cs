@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace SimElevator
@@ -75,9 +76,27 @@ namespace SimElevator
             }
         }
 
+        /// <summary>
+        ///   Check if there is already an elevator stopping at this floor
+        /// </summary>
+        /// <returns><c>true</c>, if elevator is sthere, <c>false</c> otherwise.</returns>
+        /// <param name="floor">Floor.</param>
+        bool HasElevator(int floor)
+        {
+            return elevators.Any(x => floor == x.CurrentFloor);
+        }
+
         void HandleUpCall(int floor)
         {
             Debug.Log("floor " + floor + " is calling for UP");
+            if (HasElevator(floor))
+            {
+                Debug.Log("There is a elavtor waiting already...");
+
+                buttonPanels[floor].ResetUpButton();
+                return;
+            }
+
             foreach(Elevator elevator in elevators)
             {
                 elevator.AddRequest(floor);
@@ -86,6 +105,13 @@ namespace SimElevator
         void HandleDownCall(int floor)
         {
             Debug.Log("floor " + floor + " is calling for Down");
+            if (HasElevator(floor))
+            {
+                Debug.Log("There is a elavtor waiting already...");
+                buttonPanels[floor].ResetDownButton();
+                return;
+            }
+
             foreach (Elevator elevator in elevators)
             {
                 elevator.AddRequest(floor);
