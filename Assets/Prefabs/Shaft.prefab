@@ -252,7 +252,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0be8ee5d435044fe7b14fafc322cfcc7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  lowAnchor: {fileID: 0}
-  hiAnchor: {fileID: 0}
   speed: 15
+  liftPauseTime: 3
+  elvButton: {fileID: 4440274486761044311}
   testFloor: 4
+  UpStops: 
+  DownStops: 
+  LiftState: 0
