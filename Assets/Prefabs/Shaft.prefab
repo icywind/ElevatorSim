@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 4440274486748608886}
   - component: {fileID: 4440274486748608887}
   m_Layer: 5
-  m_Name: Shaft
+  m_Name: ShaftElevator
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -257,7 +257,4 @@ MonoBehaviour:
   speed: 15
   liftPauseTime: 3
   elvButton: {fileID: 4440274486761044311}
-  testFloor: 4
-  UpStops: 
-  DownStops: 
   LiftState: 0

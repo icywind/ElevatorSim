@@ -6,16 +6,13 @@ namespace SimElevator
 {
     public class GameController : MonoBehaviour
     {
-        [SerializeField]
-        int numOfFloors = 5;
+        #region Declarations
+        [SerializeField] int numOfFloors = 5;
 
-        [SerializeField]
-        int numOfElevators = 1;
+        [SerializeField] int numOfElevators = 1;
 
-        List<Elevator> elevators = new List<Elevator>();
-
-        [SerializeField]
-        List<ButtonPanel> buttonPanels = null;
+        [SerializeField] float speed = 1.0f;
+        [SerializeField] float liftPauseTime = 3.0f;
 
         [SerializeField] GameObject ShaftPrefab = null;
         [SerializeField] GameObject ButtonsPrefab = null;
@@ -23,6 +20,12 @@ namespace SimElevator
 
         const float BUILDING_WIDTH = 700f;
         const float FLOOR_HEIGHT = 100f;
+
+        List<Elevator> elevators = new List<Elevator>();
+
+        List<ButtonPanel> buttonPanels = new List<ButtonPanel>();
+
+        #endregion
 
 
         void Awake()
@@ -32,6 +35,9 @@ namespace SimElevator
         }
 
 
+        /// <summary>
+        /// Setups the elevators.
+        /// </summary>
         void SetupElevators()
         {
  
@@ -43,14 +49,16 @@ namespace SimElevator
 
                 Elevator elevator = go.GetComponentInChildren<Elevator>();
 
-                elevator.Setup(i, numOfFloors, FLOOR_HEIGHT, HandleElevatorArrival);
+                elevator.Setup(i, numOfFloors, FLOOR_HEIGHT, speed, liftPauseTime, HandleElevatorArrival);
                 go.name = "Shaft(Elevator) " + i;
                 elevators.Add(elevator);
             }
 
         }
 
-
+        /// <summary>
+        /// Setups the button panels.
+        /// </summary>
         void SetupButtonPanels()
         {
             List<float> floorPositionY = new List<float>();
@@ -86,6 +94,10 @@ namespace SimElevator
             return elevators.Any(x => floor == x.CurrentFloor);
         }
 
+        /// <summary>
+        /// Handles calling to go up (UP button pressed on a certain floor)
+        /// </summary>
+        /// <param name="floor">Floor.</param>
         void HandleUpCall(int floor)
         {
             Debug.Log("floor " + floor + " is calling for UP");
@@ -102,6 +114,11 @@ namespace SimElevator
                 elevator.AddRequest(floor);
             }
         }
+
+        /// <summary>
+        /// Handles calling to go down (Down button pressed on a certain floor)
+        /// </summary>
+        /// <param name="floor">Floor.</param>
         void HandleDownCall(int floor)
         {
             Debug.Log("floor " + floor + " is calling for Down");
@@ -118,39 +135,43 @@ namespace SimElevator
             }
         }
 
+        /// <summary>
+        /// Handles the elevator arrival.  Cancel the highlight on the requesting 
+        /// floor button.
+        /// </summary>
+        /// <param name="floor">Floor.</param>
+        /// <param name="state">State.</param>
         void HandleElevatorArrival(int floor, LiftState state)
         {
-            Debug.Log("floor " + floor + " got an elevator, state = " + state );
+            //Debug.Log("floor " + floor + " got an elevator, state = " + state );
 
-
-
-                switch (state)
-                {
-                    case LiftState.PauseDown:
-                        if (floor == 0)
-                        {
-                            buttonPanels[floor].ResetUpButton();
-                        }
-                        else
-                        {
-                            buttonPanels[floor].ResetDownButton();
-                        }
-                        break;
-                    case LiftState.PauseUp:
-                        if (floor == numOfFloors - 1)
-                        {
-                            buttonPanels[floor].ResetDownButton();
-                        }
-                        else
-                        {
-                            buttonPanels[floor].ResetUpButton();
-                        }
-                        break;
-                    case LiftState.Still:
+            switch (state)
+            {
+                case LiftState.PauseDown:
+                    if (floor == 0)
+                    {
                         buttonPanels[floor].ResetUpButton();
+                    }
+                    else
+                    {
                         buttonPanels[floor].ResetDownButton();
-                        break;
-                }
+                    }
+                    break;
+                case LiftState.PauseUp:
+                    if (floor == numOfFloors - 1)
+                    {
+                        buttonPanels[floor].ResetDownButton();
+                    }
+                    else
+                    {
+                        buttonPanels[floor].ResetUpButton();
+                    }
+                    break;
+                case LiftState.Still:
+                    buttonPanels[floor].ResetUpButton();
+                    buttonPanels[floor].ResetDownButton();
+                    break;
+            }
 
             // Cancel request
             foreach(Elevator elevator in elevators)

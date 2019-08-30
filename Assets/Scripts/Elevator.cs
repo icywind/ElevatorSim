@@ -19,9 +19,9 @@ namespace SimElevator
 
     public class Elevator : MonoBehaviour
     {
+        #region Declarations
         [SerializeField] GameObject PanelPrefab = null;
-        [SerializeField] float speed = 1.0f;
-        [SerializeField] float liftPauseTime = 3.0f;
+
         [SerializeField] Button elvButton = null;
              
         const float DISTANCE_ERROR = 0.05f;
@@ -42,7 +42,8 @@ namespace SimElevator
         }
 
         int elvId = -1;
-
+        float speed = 1.0f;
+        float liftPauseTime = 3.0f;
         // floor is requested inside the elevator
         [SerializeField]
         HashSet<int> InsideRequest = new HashSet<int>();
@@ -68,6 +69,8 @@ namespace SimElevator
         event StateUpdateDelegate stopNotify;
 
         ElevatorPanel elevatorPanel;
+
+        #endregion
 
         public void AddRequest(int floor)
         {
@@ -107,10 +110,14 @@ namespace SimElevator
         /// <param name="elvId">Elevator ID</param>
         /// <param name="numOfFloors">Number of floors.</param>
         /// <param name="floorHeight">Floor height.</param>
+        /// <param name="speed">moving speed.</param>
+        /// <param name="pausetime">wait time before moving again.</param>
         /// <param name="stopCallback">Stop callback.</param>
-        public void Setup(int elvId, int numOfFloors, float floorHeight, StateUpdateDelegate stopCallback)
+        public void Setup(int elvId, int numOfFloors, float floorHeight, float speed, float pausetime, StateUpdateDelegate stopCallback)
         {
             this.elvId = elvId;
+            this.speed = speed;
+            this.liftPauseTime = pausetime;
 
             for (int i = 0; i < numOfFloors; i++)
             {
@@ -121,8 +128,15 @@ namespace SimElevator
             UpdateElevatorVisual(true);
         }
 
-
         private void Update()
+        {
+            monitorMovement();
+        }
+
+        /// <summary>
+        /// Monitors the movement.
+        /// </summary>
+        private void monitorMovement()
         {
             switch  (LiftState) 
             {
@@ -173,6 +187,10 @@ namespace SimElevator
             }
         }
 
+        /// <summary>
+        ///   Determine what floor the elevator is at.
+        /// </summary>
+        /// <returns>The floor.</returns>
         int CheckFloor()
         {
             float curY = transform.position.y;
@@ -196,6 +214,10 @@ namespace SimElevator
             return floor;
         }
 
+        /// <summary>
+        /// Updates the elevator visual.  Different look during move and at stop.
+        /// </summary>
+        /// <param name="doorOpen">If set to <c>true</c> door open.</param>
         void UpdateElevatorVisual(bool doorOpen)
         {
             if(doorOpen)
@@ -250,7 +272,9 @@ namespace SimElevator
             }
         }
 
-
+        /// <summary>
+        ///    Elevator arrives at a stop. update the list and state.
+        /// </summary>
         void OnStop()
         {
             Debug.Log("OnStop, elv:" + elvId);
@@ -283,6 +307,9 @@ namespace SimElevator
             handleStateUpdate?.Invoke(CurrentFloor, LiftState);
         }
 
+        /// <summary>
+        /// Resumes the lifting.
+        /// </summary>
         void ResumeLifting()
         {
             if (LiftState==LiftState.PauseUp)
@@ -310,6 +337,9 @@ namespace SimElevator
            
         }
 
+        /// <summary>
+        ///   respond to the click event
+        /// </summary>
         public void OnClick()
         {
 
@@ -321,6 +351,9 @@ namespace SimElevator
             }
         }
 
+        /// <summary>
+        /// Opens the button panel inside elevator
+        /// </summary>
         void OpenPanel()
         {
             if (elevatorPanel == null)
@@ -350,11 +383,6 @@ namespace SimElevator
             }
         }
 
-        float getDuration(Vector3 current, Vector3 target)
-        {
-            float dist = Vector3.Distance(current, target);
-            return dist / speed;
-        }
 
         /// <summary>
         ///   Handle a new request during the move
@@ -371,6 +399,9 @@ namespace SimElevator
             }
         }
 
+        /// <summary>
+        /// Prepares the move up.
+        /// </summary>
         void PrepareMoveUp()
         {
             if (UpStops.Count > 0)
@@ -384,6 +415,9 @@ namespace SimElevator
             }
         }
 
+        /// <summary>
+        /// Prepares the move down.
+        /// </summary>
         void PrepareMoveDown()
         {
             if (DownStops.Count > 0)

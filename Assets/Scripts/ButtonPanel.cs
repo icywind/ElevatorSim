@@ -8,6 +8,7 @@ namespace SimElevator
     {
         [SerializeField] Button upButton = null;
         [SerializeField] Button downButton = null;
+        [SerializeField] Text floorText = null;
 
         private int floorID { get; set; }
         private Action<int> handleUpAction = null;
@@ -43,6 +44,7 @@ namespace SimElevator
             handleUpAction = upAction;
             handleDownAction = downAction;
             floorID = floorid;
+            floorText.text = floorid.ToString();
         }
 
         public void ResetUpButton()
