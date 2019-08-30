@@ -26,11 +26,11 @@ namespace SimElevator
              
         const float DISTANCE_ERROR = 0.05f;
         readonly List<float> floorPositionY = new List<float>();
+
         [SerializeField]
-        //List<int> UpStops = new List<int>();
         HashSet<int> UpStops = new HashSet<int>();
+
         [SerializeField]
-         // List<int> DownStops = new List<int>();
         HashSet<int> DownStops = new HashSet<int>();
 
         int TopFloor
@@ -42,7 +42,6 @@ namespace SimElevator
         }
 
         int elvId = -1;
-        //HashSet<int> DownStops = new HashSet<int>();
 
         // floor is requested inside the elevator
         [SerializeField]
@@ -142,8 +141,11 @@ namespace SimElevator
                         int floor = CheckFloor();
                         if (-1 != floor)
                         {
-                            if (CurrentFloor != floor) Debug.Log("Floor ------> " + floor);
-                            CurrentFloor = floor;
+                            if (CurrentFloor != floor)
+                            {
+                                Debug.Log("Floor ------> " + floor);
+                                CurrentFloor = floor;
+                            }
                             if ((UpStops.Contains(floor) && LiftState == LiftState.Up) || 
                                 (DownStops.Contains(floor) && LiftState == LiftState.Down) ||
                                 distance <= DISTANCE_ERROR 
@@ -251,7 +253,7 @@ namespace SimElevator
 
         void OnStop()
         {
-            Debug.LogWarning("OnStop, elv:" + elvId);
+            Debug.Log("OnStop, elv:" + elvId);
             UpStops.Remove(CurrentFloor);
             DownStops.Remove(CurrentFloor);
             InsideRequest.Remove(CurrentFloor);

@@ -31,7 +31,6 @@ namespace SimElevator {
 
         const float CONTAINER_HEIGHT = 600;
 
-        LiftState liftState;
         int totalFloors = 0;
         int currentFloor = 0;
         Action OnClose;
@@ -39,14 +38,6 @@ namespace SimElevator {
 
         private void OnEnable()
         {
-            // TEST CODE
-            /*
-            Setup(2, 5, (f) => {
-                Debug.Log("Floor selected: " + f);
-            }, 
-            LiftState.Up, new List<int> { 1, 4 });
-            */
-
             Time.timeScale = 0;           
         }
 
@@ -61,7 +52,6 @@ namespace SimElevator {
 
         public void Setup(int elvId, int numFloors, LiftState state, IEnumerable<int>selectedFloors, Action<int> floorUpdate, Action onClose)
         {
-            liftState = state;
             OnFloorSelect = floorUpdate;
             OnClose = onClose;
             totalFloors = numFloors;
@@ -79,7 +69,7 @@ namespace SimElevator {
             FloorTitle.text = floor.ToString();
             currentFloor = floor;
 
-            Debug.LogWarning("Update state floor:" + floor + " state: " + state);
+            // Debug.Log("Update state floor:" + floor + " state: " + state);
 
             switch (state)
             {
@@ -116,9 +106,6 @@ namespace SimElevator {
         {
             DownArrow.color = enable ? Color.white : Color.black;
         }
-
-        static Color HIGHLIGHTED_RED = new Color(231/255, 60/255, 50/255);
-        static Color BASE_DARK_RED = new Color(111/255, 19/255, 19/255);
 
         void HighlightButtonText(int floor, bool highlighting)
         {
@@ -166,10 +153,7 @@ namespace SimElevator {
             {
                 HighlightButtonText(floor, true);
                 SelectedFloors.Add(floor);
-                if (OnFloorSelect != null)
-                {
-                    OnFloorSelect(floor);
-                }
+                OnFloorSelect?.Invoke(floor);
             }
 
         }
