@@ -18,6 +18,7 @@ namespace SimElevator
 
     public class Elevator : MonoBehaviour
     {
+        [SerializeField] GameObject PanelPrefab = null;
         [SerializeField] float speed = 1.0f;
         [SerializeField] float liftPauseTime = 3.0f;
         [SerializeField] Button elvButton = null;
@@ -108,9 +109,10 @@ namespace SimElevator
         public void Setup(int elvId, int numOfFloors, float floorHeight, Action<int, LiftState> stopCallback)
         {
             this.elvId = elvId;
+            Debug.LogWarning("Screen size h= " + Screen.height + " w:" + Screen.width);
             for (int i = 0; i < numOfFloors; i++)
             {
-                float posY = transform.position.y + i * floorHeight/4.75f;
+                float posY = transform.position.y + i * floorHeight/(5.5f*Screen.height/640);
                 floorPositionY.Add(posY);
             }
             stopNotify = stopCallback;
@@ -312,9 +314,27 @@ namespace SimElevator
         public void OnClick()
         {
             Debug.Log("OnClick of Elevator");
-            Move2(testFloor);
+             // Move2(testFloor);
+            if (LiftState == LiftState.PauseDown || 
+                LiftState == LiftState.PauseUp ||
+                LiftState == LiftState.Still)
+            {
+                OpenPanel();
+            }
         }
 
+        void OpenPanel()
+        {
+            GameObject go = GameObjectUtil.InstantiateAndAnchor(PanelPrefab,
+                transform.parent.parent.parent,
+                new Vector3(0, 0, 0)
+                );
+            ElevatorPanel panel = go.GetComponent<ElevatorPanel>();
+            if (panel != null)
+            {
+                panel.Setup(elvId, TopFloor + 1, AddRequest, LiftState, null);
+            }
+        }
 
         float getDuration(Vector3 current, Vector3 target)
         {

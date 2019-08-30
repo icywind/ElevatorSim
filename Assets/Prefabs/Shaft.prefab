@@ -252,6 +252,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0be8ee5d435044fe7b14fafc322cfcc7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  PanelPrefab: {fileID: 4776735842138602615, guid: 0650a413d41214f32b7f5e9df0a827cf,
+    type: 3}
   speed: 15
   liftPauseTime: 3
   elvButton: {fileID: 4440274486761044311}

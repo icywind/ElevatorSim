@@ -22,7 +22,8 @@ namespace SimElevator
 
         const float BUILDING_WIDTH = 700f;
         const float FLOOR_HEIGHT = 100f;
-    
+
+
         void Awake()
         {
             SetupElevators();
